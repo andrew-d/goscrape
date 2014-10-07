@@ -12,7 +12,7 @@ import (
 // the given selection.
 type TextExtractor struct{}
 
-func (e *TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	return sel.Text(), nil
 }
 
@@ -24,7 +24,7 @@ func (e *TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 // then the output will be: "<b>ONE</b><i>TWO</i>".
 type HtmlExtractor struct{}
 
-func (e *HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	var ret, h string
 	var err error
 
@@ -56,7 +56,7 @@ func (e *HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 // "<div><b>ONE</b></div><p><i>TWO</i></p>".
 type OuterHtmlExtractor struct{}
 
-func (e *OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	var ret, h string
 	var err error
 
@@ -88,7 +88,7 @@ type RegexExtractor struct {
 	// each element in the selection, as opposed to the HTML contents.
 	OnlyText bool
 
-	// By default, if there is only a single match of, RegexExtractor will return
+	// By default, if there is only a single match, RegexExtractor will return
 	// the match itself (as opposed to an array containing the single match).
 	// Set AlwaysReturnList to true to disable this behaviour, ensuring that the
 	// Extract function always returns an array.
@@ -101,7 +101,7 @@ type RegexExtractor struct {
 	OmitIfEmpty bool
 }
 
-func (e *RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	if e.Regex == nil {
 		return nil, errors.New("no regex given")
 	}
@@ -151,7 +151,7 @@ func (e *RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 		return nil, nil
 	}
 	if len(results) == 1 && !e.AlwaysReturnList {
-		return results[1], nil
+		return results[0], nil
 	}
 
 	return results, nil
@@ -170,7 +170,7 @@ type AttrExtractor struct {
 	OmitIfEmpty bool
 }
 
-func (e *AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	if len(e.Attr) == 0 {
 		return nil, errors.New("no attribute provided")
 	}
