@@ -163,6 +163,12 @@ type AttrExtractor struct {
 	// The HTML attribute to extract from each element.
 	Attr string
 
+	// By default, if there is only a single attribute extracted, AttrExtractor
+	// will return the match itself (as opposed to an array containing the single
+	// match).  Set AlwaysReturnList to true to disable this behaviour, ensuring
+	// that the Extract function always returns an array.
+	AlwaysReturnList bool
+
 	// If no elements with this attribute are found, then return 'nil' from
 	// Extract, instead of the empty list.  This signals that the result of this
 	// Piece should be omitted entirely from the results, as opposed to including
@@ -185,6 +191,9 @@ func (e AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	if len(results) == 0 && e.OmitIfEmpty {
 		return nil, nil
+	}
+	if len(results) == 1 && !e.AlwaysReturnList {
+		return results[0], nil
 	}
 
 	return results, nil
