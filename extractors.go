@@ -1,6 +1,10 @@
 package scrape
 
 import (
+	"errors"
+	"fmt"
+	"regexp"
+
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -21,14 +25,26 @@ func (e *TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 type HtmlExtractor struct{}
 
 func (e *HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
-	var ret string
+	var ret, h string
+	var err error
 
-	sel.Each(func(int, s *Selection) {
-		s.Each(func(int, s *Selection) {
-			ret += s.Html()
+	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
+		s.EachWithBreak(func(i int, s *goquery.Selection) bool {
+			h, err = s.Html()
+			if err != nil {
+				return false
+			}
+
+			ret += h
+			return true
 		})
+
+		return err == nil
 	})
 
+	if err != nil {
+		return nil, err
+	}
 	return ret, nil
 }
 
@@ -40,13 +56,23 @@ func (e *HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 // "<div><b>ONE</b></div><p><i>TWO</i></p>".
 type OuterHtmlExtractor struct{}
 
-func (e *HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
-	var ret string
+func (e *OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+	var ret, h string
+	var err error
 
-	sel.Each(func(int, s *Selection) {
-		ret += s.Html()
+	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
+		h, err = s.Html()
+		if err != nil {
+			return false
+		}
+
+		ret += h
+		return true
 	})
 
+	if err != nil {
+		return nil, err
+	}
 	return ret, nil
 }
 
@@ -87,15 +113,24 @@ func (e *RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	var results []string
 
 	// For each element in the selector...
-	sel.Each(func(int, s *Selection) {
+	var err error
+	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
 		var contents string
 		if e.OnlyText {
 			contents = s.Text()
 		} else {
-			contents = s.Html()
+			contents, err = s.Html()
+			if err != nil {
+				return false
+			}
 		}
 
-		ret := e.Regex.FindAllStringSubmatch()
+		ret := e.Regex.FindAllStringSubmatch(contents, -1)
+
+		// A return value of nil == no match
+		if ret == nil {
+			return true
+		}
 
 		// For each regex match...
 		for _, submatches := range ret {
@@ -105,8 +140,13 @@ func (e *RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 				results = append(results, submatches[1])
 			}
 		}
+
+		return true
 	})
 
+	if err != nil {
+		return nil, err
+	}
 	if len(results) == 0 && e.OmitIfEmpty {
 		return nil, nil
 	}
@@ -132,12 +172,12 @@ type AttrExtractor struct {
 
 func (e *AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	if len(e.Attr) == 0 {
-		return errors.New("no attribute provided")
+		return nil, errors.New("no attribute provided")
 	}
 
 	var results []string
 
-	sel.Each(func(int, s *Selection) {
+	sel.Each(func(i int, s *goquery.Selection) {
 		if val, found := s.Attr(e.Attr); found {
 			results = append(results, val)
 		}

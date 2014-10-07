@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/cookiejar"
 
@@ -215,8 +216,8 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 	}
 
 	res := &ScrapeResults{
-		URLs:    make([]string),
-		Results: make([][]map[string]interface{}),
+		URLs:    []string{},
+		Results: [][]map[string]interface{}{},
 	}
 
 	// Repeat until we don't have any more URLs.
@@ -236,7 +237,7 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 		results := []map[string]interface{}{}
 
 		// Divide this page into blocks
-		for _, block := range e.DividePage(doc) {
+		for _, block := range s.config.DividePage(doc.Selection) {
 			blockResults := map[string]interface{}{}
 
 			// Process each piece of this block
@@ -248,7 +249,7 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 
 				pieceResults, err := piece.Extractor.Extract(sel)
 				if err != nil {
-					return err
+					return nil, err
 				}
 
 				// A nil response from an extractor means that we don't even include it in
@@ -268,7 +269,7 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 		res.Results = append(res.Results, results)
 
 		// Get the next page.
-		url = s.config.NextPage(doc)
+		url = s.config.NextPage(doc.Selection)
 	}
 
 	// All good!

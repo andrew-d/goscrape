@@ -23,7 +23,7 @@ func NextPageBySelector(sel, attr string) NextPageFunc {
 func DividePageBySelector(sel string) DividePageFunc {
 	ret := func(doc *goquery.Selection) []*goquery.Selection {
 		sels := []*goquery.Selection{}
-		doc.Find(sel).Each(func(int, s *goquery.Selection) {
+		doc.Find(sel).Each(func(i int, s *goquery.Selection) {
 			sels = append(sels, s)
 		})
 
