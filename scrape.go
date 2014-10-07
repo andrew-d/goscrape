@@ -152,10 +152,17 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 	if len(c.Pieces) == 0 {
 		return nil, ErrNoPieces
 	}
+
+	seenNames := map[string]struct{}{}
 	for i, piece := range c.Pieces {
 		if len(piece.Name) == 0 {
 			return nil, fmt.Errorf("no name provided for piece %d", i)
 		}
+		if _, seen := seenNames[piece.Name]; seen {
+			return nil, fmt.Errorf("piece %s has a duplicate name", i)
+		}
+		seenNames[piece.Name] = struct{}{}
+
 		if len(piece.Selector) == 0 {
 			return nil, fmt.Errorf("no selector provided for piece %d", i)
 		}
