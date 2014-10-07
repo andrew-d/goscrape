@@ -2,19 +2,20 @@
 
 [![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/andrew-d/goscrape)
 
-goscrape is a structured scraper for Go.  What does a "structured scraper" mean?
-In this case, it means that you define what you want to extract from a page in
-a structures, hierarchical manner, and then goscrape takes care of splitting up
-the input page.
+goscrape is a extensible structured scraper for Go.  What does a "structured
+scraper" mean?  In this case, it means that you define what you want to extract
+from a page in a structured, hierarchical manner, and then goscrape takes care
+of pagination, splitting the input page, and calling the code to extract chunks
+of data.
 
 The architecture of goscrape is roughly as follows:
 
-- A single request to start scraping (from a given URL) is called a scrape.
-- Each scrape consists of some number of pages
-- Inside each page, there's 1 or more "blocks" - some logical method of splitting
+- A single request to start scraping (from a given URL) is called a *scrape*.
+- Each scrape consists of some number of *pages*.
+- Inside each page, there's 1 or more *blocks* - some logical method of splitting
   up a page into subcomponents.  By default, there's a single block that consists
 	of the pages's `<body>` element, but you can change this fairly easily.
-- Inside each block, you define some number of "pieces" of data that you wish
+- Inside each block, you define some number of *pieces* of data that you wish
   to extract.  Each piece consists of a name, a selector, and what data to
 	extract from the current block.
 
