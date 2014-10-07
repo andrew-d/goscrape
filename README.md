@@ -20,7 +20,7 @@ This all sounds rather complicated, but in practice it's quite simple.  Here's
 a short example of how to get a list of all the headlined articles from Wired
 and dump them as JSON to the screen:
 
-```
+```go
 package main
 
 import (
