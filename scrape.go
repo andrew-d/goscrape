@@ -11,7 +11,6 @@ import (
 
 var (
 	ErrNoPieces = errors.New("no pieces in the config")
-	ErrNoOrigin = errors.New("no OriginURL provided")
 )
 
 // The NextPageFunc type is used to extract the next page during a scrape.  For
@@ -44,8 +43,9 @@ type Piece struct {
 	// TODO(andrew-d): Consider making this an interface too.
 	Selector string
 
-	// What to extract from the Selector (above).
-	Extract PieceExtractor
+	// Extractor contains the logic on how to extract some results from the
+	// selector that is provided to this Piece.
+	Extractor PieceExtractor
 }
 
 // The main configuration for a scrape.  Pass this to the New() function.
@@ -76,12 +76,9 @@ type ScrapeConfig struct {
 	// empty string when there are no more pages to process.
 	//
 	// If NextPage is nil, then no pagination is performed and it is assumed that
-	// the OriginURL is the only page.
+	// the initial URL is the only page.
 	// TODO(andrew-d): should this return a string, a url.URL, ???
 	NextPage NextPageFunc
-
-	// OriginURL is the URL of the first page to process.
-	OriginURL string
 
 	// DividePage splits a page into individual 'blocks'.  When scraping, we treat
 	// each page as if it contains some number of 'blocks', each of which can be
@@ -110,11 +107,37 @@ func (c *ScrapeConfig) clone() *ScrapeConfig {
 		PrepareRequest:  c.PrepareRequest,
 		ProcessResponse: c.ProcessResponse,
 		NextPage:        c.NextPage,
-		OriginURL:       c.OriginURL,
 		DividePage:      c.DividePage,
 		Pieces:          c.Pieces,
 	}
 	return ret
+}
+
+// ScrapeResults describes the results of a scrape.  It contains a list of all
+// pages (URLs) visited during the process, along with all results generated
+// from each Piece in each page.
+type ScrapeResults struct {
+	// All URLs visited during this scrape, in order.  Always contains at least
+	// one element - the initial URL.
+	URLs []string
+
+	// The results from each Piece of each page.  Essentially, the top-level array
+	// is for each page, the second-level array is for each block in a page, and
+	// the final map[string]interface{} is the mapping of Piece.Name to results.
+	Results [][]map[string]interface{}
+}
+
+// First returns the first set of results - i.e. the results from the first
+// block on the first page.
+//
+// This function can return nil if there were no blocks found on the first page
+// of the scrape.
+func (r *ScrapeResults) First() map[string]interface{} {
+	if len(r.Results[0]) == 0 {
+		return nil
+	}
+
+	return r.Results[0][0]
 }
 
 type Scraper struct {
@@ -122,13 +145,19 @@ type Scraper struct {
 	config *ScrapeConfig
 }
 
+// Create a new scraper with the provided configuration.
 func New(c *ScrapeConfig) (*Scraper, error) {
 	// Validate config
-	if len(c.OriginURL) == 0 {
-		return nil, ErrNoOrigin
-	}
 	if len(c.Pieces) == 0 {
 		return nil, ErrNoPieces
+	}
+	for i, piece := range c.Pieces {
+		if len(piece.Name) == 0 {
+			return nil, fmt.Errorf("no name provided for piece %d", i)
+		}
+		if len(piece.Selector) == 0 {
+			return nil, fmt.Errorf("no selector provided for piece %d", i)
+		}
 	}
 
 	// Set up the HTTP client
@@ -173,176 +202,102 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 	return ret, nil
 }
 
-// NextPageBySelector returns a function that extracts the next page from a
-// document by querying a given CSS selector and extracting the given HTML
-// attribute from the resulting element.
-func NextPageBySelector(sel, attr string) NextPageFunc {
-	ret := func(doc *goquery.Selection) string {
-		if val, found := doc.Find(sel).Attr(attr); found {
-			return val
-		}
-		return ""
-	}
-	return ret
-}
-
-// DividePageBySelector returns a function that divides a page into blocks by
-// CSS selector.  Each element in the page with the given selector is treated
-// as a new block.
-func DividePageBySelector(sel string) DividePageFunc {
-	ret := func(doc *goquery.Selection) []*goquery.Selection {
-		sels := []*goquery.Selection{}
-		doc.Find(sel).Each(func(int, s *goquery.Selection) {
-			sels = append(sels, s)
-		})
-
-		return sels
-	}
-	return ret
-}
-
-// TextExtractor is a PieceExtractor that returns the combined text contents of
-// the given selection.
-type TextExtractor struct{}
-
-func (e *TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
-	return sel.Text(), nil
-}
-
-// HtmlExtractor extracts and returns the HTML from inside each element of the
-// given selection, as a string.
+// Actually start scraping at the given URL.
 //
-// Note that this results in what is effectively the innerHTML of the element -
-// i.e. if our selection consists of ["<p><b>ONE</b></p>", "<p><i>TWO</i></p>"]
-// then the output will be: "<b>ONE</b><i>TWO</i>".
-type HtmlExtractor struct{}
-
-func (e *HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
-	var ret string
-
-	sel.Each(func(int, s *Selection) {
-		s.Each(func(int, s *Selection) {
-			ret += s.Html()
-		})
-	})
-
-	return ret, nil
-}
-
-// OuterHtmlExtractor extracts and returns the HTML of each element of the
-// given selection, as a string.
-//
-// To illustrate, if our selection consists of
-// ["<div><b>ONE</b></div>", "<p><i>TWO</i></p>"] then the output will be:
-// "<div><b>ONE</b></div><p><i>TWO</i></p>".
-type OuterHtmlExtractor struct{}
-
-func (e *HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
-	var ret string
-
-	sel.Each(func(int, s *Selection) {
-		ret += s.Html()
-	})
-
-	return ret, nil
-}
-
-// RegexExtractor runs the given regex over the contents of each element in the
-// given selection, and, for each match, extracts the first subexpression.
-type RegexExtractor struct {
-	// The regular expression to match.  This regular expression must define
-	// exactly one parenthesized subexpressions (sometimes known as a "capturing
-	// group"), which will be extracted and joined.
-	Regex *regexp.Regexp
-
-	// When OnlyText is true, only run the given regex over the text contents of
-	// each element in the selection, as opposed to the HTML contents.
-	OnlyText bool
-
-	// By default, if there is only a single match of, RegexExtractor will return
-	// the match itself (as opposed to an array containing the single match).
-	// Set AlwaysReturnList to true to disable this behaviour, ensuring that the
-	// Extract function always returns an array.
-	AlwaysReturnList bool
-
-	// If no matches of the provided regex could be extracted, then return 'nil'
-	// from Extract, instead of the empty list.  This signals that the result of
-	// this Piece should be omitted entirely from the results, as opposed to
-	// including the empty list.
-	OmitIfEmpty bool
-}
-
-func (e *RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
-	if e.Regex == nil {
-		return nil, errors.New("no regex given")
-	}
-	if e.Regex.NumSubexp() != 1 {
-		return nil, fmt.Errorf("regex has an invalid number of subexpressions (%d != 1)",
-			e.Regex.NumSubexp())
+// Note that, while this function and the Scraper in general are safe for use
+// from multiple goroutines, making multiple requests in parallel can cause
+// strange behaviour - e.g. overwriting cookies in the underlying http.Client.
+// Please be careful when running multiple scrapes at a time, unless you know
+// that it's safe.
+func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
+	if len(url) == 0 {
+		return nil, errors.New("no URL provided")
 	}
 
-	var results []string
+	res := &ScrapeResults{
+		URLs:    make([]string),
+		Results: make([][]map[string]interface{}),
+	}
 
-	// For each element in the selector...
-	sel.Each(func(int, s *Selection) {
-		var contents string
-		if e.OnlyText {
-			contents = s.Text()
-		} else {
-			contents = s.Html()
+	// Repeat until we don't have any more URLs.
+	for len(url) > 0 {
+		resp, err := s.get(url)
+		if err != nil {
+			return nil, err
 		}
 
-		ret := e.Regex.FindAllStringSubmatch()
+		// Create a goquery document.
+		doc, err := goquery.NewDocumentFromResponse(resp)
+		if err != nil {
+			return nil, err
+		}
 
-		// For each regex match...
-		for _, submatches := range ret {
-			// The 0th entry will be the match of the entire string.  The 1st entry will
-			// be the first capturing group, which is what we want to extract.
-			if len(submatches) > 1 {
-				results = append(results, submatches[1])
+		res.URLs = append(res.URLs, url)
+		results := []map[string]interface{}{}
+
+		// Divide this page into blocks
+		for _, block := range e.DividePage(doc) {
+			blockResults := map[string]interface{}{}
+
+			// Process each piece of this block
+			for _, piece := range s.config.Pieces {
+				sel := block
+				if piece.Selector != "." {
+					sel = sel.Find(piece.Selector)
+				}
+
+				pieceResults, err := piece.Extractor.Extract(sel)
+				if err != nil {
+					return err
+				}
+
+				// A nil response from an extractor means that we don't even include it in
+				// the results.
+				if pieceResults == nil {
+					continue
+				}
+
+				blockResults[piece.Name] = pieceResults
 			}
+
+			// Append the results from this block.
+			results = append(results, blockResults)
 		}
-	})
 
-	if len(results) == 0 && e.OmitIfEmpty {
-		return nil, nil
-	}
-	if len(results) == 1 && !e.AlwaysReturnList {
-		return results[1], nil
+		// Append the results from this page.
+		res.Results = append(res.Results, results)
+
+		// Get the next page.
+		url = s.config.NextPage(doc)
 	}
 
-	return results, nil
+	// All good!
+	return res, nil
 }
 
-// AttrExtractor extracts the value of a given HTML attribute from each element
-// in the selection, and returns them as a list.
-type AttrExtractor struct {
-	// The HTML attribute to extract from each element.
-	Attr string
+func (s *Scraper) doRequest(req *http.Request) (*http.Response, error) {
+	var err error
 
-	// If no elements with this attribute are found, then return 'nil' from
-	// Extract, instead of the empty list.  This signals that the result of this
-	// Piece should be omitted entirely from the results, as opposed to including
-	// the empty list.
-	OmitIfEmpty bool
+	if err = s.config.PrepareRequest(req); err != nil {
+		return nil, err
+	}
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.config.ProcessResponse(resp); err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
-func (e *AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
-	if len(e.Attr) == 0 {
-		return errors.New("no attribute provided")
+func (s *Scraper) get(url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	var results []string
-
-	sel.Each(func(int, s *Selection) {
-		if val, found := s.Attr(e.Attr); found {
-			results = append(results, val)
-		}
-	})
-
-	if len(results) == 0 && e.OmitIfEmpty {
-		return nil, nil
-	}
-
-	return results, nil
+	return s.doRequest(req)
 }
