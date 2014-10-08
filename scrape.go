@@ -96,9 +96,9 @@ type ScrapeConfig struct {
 	// return a result.  If the returned result is nil, then the Piece is
 	// considered not to exist in this block, and is not included.
 	//
-	// Note: if a Piece returns an error, it results in the scrape being aborted -
-	// this can be useful if you need to ensure that a given Piece is required,
-	// for example.
+	// Note: if a Piece's Extractor returns an error, it results in the scrape
+	// being aborted - this can be useful if you need to ensure that a given Piece
+	// is required, for example.
 	Pieces []Piece
 }
 
