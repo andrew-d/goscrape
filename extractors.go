@@ -22,6 +22,8 @@ func (e TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 // Note that this results in what is effectively the innerHTML of the element -
 // i.e. if our selection consists of ["<p><b>ONE</b></p>", "<p><i>TWO</i></p>"]
 // then the output will be: "<b>ONE</b><i>TWO</i>".
+//
+// The return type is a string of all the inner HTML joined together.
 type HtmlExtractor struct{}
 
 func (e HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
@@ -54,6 +56,8 @@ func (e HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 // To illustrate, if our selection consists of
 // ["<div><b>ONE</b></div>", "<p><i>TWO</i></p>"] then the output will be:
 // "<div><b>ONE</b></div><p><i>TWO</i></p>".
+//
+// The return type is a string of all the outer HTML joined together.
 type OuterHtmlExtractor struct{}
 
 func (e OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
@@ -78,10 +82,11 @@ func (e OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error)
 
 // RegexExtractor runs the given regex over the contents of each element in the
 // given selection, and, for each match, extracts the first subexpression.
+// The return type of the extractor is a list of string matches (i.e. []string).
 type RegexExtractor struct {
 	// The regular expression to match.  This regular expression must define
-	// exactly one parenthesized subexpressions (sometimes known as a "capturing
-	// group"), which will be extracted and joined.
+	// exactly one parenthesized subexpression (sometimes known as a "capturing
+	// group"), which will be extracted.
 	Regex *regexp.Regexp
 
 	// When OnlyText is true, only run the given regex over the text contents of
@@ -159,6 +164,7 @@ func (e RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 
 // AttrExtractor extracts the value of a given HTML attribute from each element
 // in the selection, and returns them as a list.
+// The return type of the extractor is a list of attribute valueus (i.e. []string).
 type AttrExtractor struct {
 	// The HTML attribute to extract from each element.
 	Attr string
