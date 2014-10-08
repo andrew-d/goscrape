@@ -6,7 +6,8 @@ goscrape is a extensible structured scraper for Go.  What does a "structured
 scraper" mean?  In this case, it means that you define what you want to extract
 from a page in a structured, hierarchical manner, and then goscrape takes care
 of pagination, splitting the input page, and calling the code to extract chunks
-of data.
+of data.  However, goscrape is *extensible*, allowing you to customize nearly
+every step of this process.
 
 The architecture of goscrape is roughly as follows:
 
@@ -69,7 +70,12 @@ For more usage examples, see the
 
 ## Roadmap
 
+Here's the rough roadmap of things that I'd like to add.  If you have a feature
+request, please let me know by [opening an issue](https://github.com/andrew-d/goscrape/issues/new)!
+
 - [ ] Add support for using PhantomJS to grab a website's content
+- [ ] Allow deduplication of Pieces (a custom callback?)
+- [ ] Improve parallelization (scrape multiple pages at a time, but maintain order)
 
 ## License
 
