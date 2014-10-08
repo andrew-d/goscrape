@@ -141,6 +141,20 @@ func (r *ScrapeResults) First() map[string]interface{} {
 	return r.Results[0][0]
 }
 
+// AllBlocks returns a single list of results from every block on all pages.
+// This function will always return a list, even if no blocks were found.
+func (r *ScrapeResults) AllBlocks() []map[string]interface{} {
+	ret := []map[string]interface{}{}
+
+	for _, page := range r.Results {
+		for _, block := range page {
+			ret = append(ret, block)
+		}
+	}
+
+	return ret
+}
+
 type Scraper struct {
 	client *http.Client
 	config *ScrapeConfig
