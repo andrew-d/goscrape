@@ -41,8 +41,8 @@ type Piece struct {
 
 	// A sub-selector within the given block to process.  Pass in "." to use
 	// the root block's selector with no modification.
-	// TODO(andrew-d): Consider making this an interface too.
 	Selector string
+	// TODO(andrew-d): Consider making this an interface too.
 
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
@@ -62,7 +62,7 @@ type ScrapeConfig struct {
 	// be aborted.
 	//
 	// Note: this function does NOT apply to requests made during the
-	// PrepareClient function (above0.
+	// PrepareClient function (above).
 	PrepareRequest func(*http.Request) error
 
 	// ProcessResponse modifies a response that is returned from the server before
@@ -78,8 +78,8 @@ type ScrapeConfig struct {
 	//
 	// If NextPage is nil, then no pagination is performed and it is assumed that
 	// the initial URL is the only page.
-	// TODO(andrew-d): should this return a string, a url.URL, ???
 	NextPage NextPageFunc
+	// TODO(andrew-d): should this return a string, a url.URL, ???
 
 	// DividePage splits a page into individual 'blocks'.  When scraping, we treat
 	// each page as if it contains some number of 'blocks', each of which can be
