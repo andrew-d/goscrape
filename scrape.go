@@ -3,10 +3,7 @@ package scrape
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"net/http/cookiejar"
 
-	"code.google.com/p/go.net/publicsuffix"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -51,24 +48,10 @@ type Piece struct {
 
 // The main configuration for a scrape.  Pass this to the New() function.
 type ScrapeConfig struct {
-	// PrepareClient prepares this scraper's http.Client for usage.  Use this
-	// function to do things like logging in.  If the function returns an error,
-	// the scrape is aborted.
-	PrepareClient func(*http.Client) error
-
-	// PrepareRequest prepares each request that will be sent, prior to sending.
-	// This is useful for, e.g. setting custom HTTP headers, changing the User-
-	// Agent, and so on.  If the function returns an error, then the scrape will
-	// be aborted.
-	//
-	// Note: this function does NOT apply to requests made during the
-	// PrepareClient function (above).
-	PrepareRequest func(*http.Request) error
-
-	// ProcessResponse modifies a response that is returned from the server before
-	// it is handled by the scraper.  If the function returns an error, then the
-	// scrape will be aborted.
-	ProcessResponse func(*http.Response) error
+	// Fetcher is the underlying transport that is used to fetch documents.
+	// If this is not specified (i.e. left nil), then a default HttpClientFetcher
+	// will be created and used.
+	Fetcher Fetcher
 
 	// NextPage controls the progress of the scrape.  It is called for each input
 	// page, starting with the origin URL, and is expected to return the URL of
@@ -104,12 +87,10 @@ type ScrapeConfig struct {
 
 func (c *ScrapeConfig) clone() *ScrapeConfig {
 	ret := &ScrapeConfig{
-		PrepareClient:   c.PrepareClient,
-		PrepareRequest:  c.PrepareRequest,
-		ProcessResponse: c.ProcessResponse,
-		NextPage:        c.NextPage,
-		DividePage:      c.DividePage,
-		Pieces:          c.Pieces,
+		Fetcher:    c.Fetcher,
+		NextPage:   c.NextPage,
+		DividePage: c.DividePage,
+		Pieces:     c.Pieces,
 	}
 	return ret
 }
@@ -156,12 +137,13 @@ func (r *ScrapeResults) AllBlocks() []map[string]interface{} {
 }
 
 type Scraper struct {
-	client *http.Client
 	config *ScrapeConfig
 }
 
 // Create a new scraper with the provided configuration.
 func New(c *ScrapeConfig) (*Scraper, error) {
+	var err error
+
 	// Validate config
 	if len(c.Pieces) == 0 {
 		return nil, ErrNoPieces
@@ -182,31 +164,8 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 		}
 	}
 
-	// Set up the HTTP client
-	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-	jar, err := cookiejar.New(jarOpts)
-	if err != nil {
-		return nil, err
-	}
-	client := &http.Client{Jar: jar}
-
 	// Clone the configuration and fill in the defaults.
 	config := c.clone()
-	if config.PrepareClient == nil {
-		config.PrepareClient = func(*http.Client) error {
-			return nil
-		}
-	}
-	if config.PrepareRequest == nil {
-		config.PrepareRequest = func(*http.Request) error {
-			return nil
-		}
-	}
-	if config.ProcessResponse == nil {
-		config.ProcessResponse = func(*http.Response) error {
-			return nil
-		}
-	}
 	if config.NextPage == nil {
 		config.NextPage = func(*goquery.Selection) string {
 			return ""
@@ -216,9 +175,15 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 		config.DividePage = DividePageBySelector("body")
 	}
 
+	if config.Fetcher == nil {
+		config.Fetcher, err = NewHttpClientFetcher()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// All set!
 	ret := &Scraper{
-		client: client,
 		config: config,
 	}
 	return ret, nil
@@ -236,6 +201,12 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 		return nil, errors.New("no URL provided")
 	}
 
+	// Prepare the fetcher.
+	err := s.config.Fetcher.Prepare()
+	if err != nil {
+		return nil, err
+	}
+
 	res := &ScrapeResults{
 		URLs:    []string{},
 		Results: [][]map[string]interface{}{},
@@ -243,13 +214,14 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 
 	// Repeat until we don't have any more URLs.
 	for len(url) > 0 {
-		resp, err := s.get(url)
+		resp, err := s.config.Fetcher.Fetch("GET", url)
 		if err != nil {
 			return nil, err
 		}
 
 		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromResponse(resp)
+		doc, err := goquery.NewDocumentFromReader(resp)
+		resp.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -295,31 +267,4 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 
 	// All good!
 	return res, nil
-}
-
-func (s *Scraper) doRequest(req *http.Request) (*http.Response, error) {
-	var err error
-
-	if err = s.config.PrepareRequest(req); err != nil {
-		return nil, err
-	}
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = s.config.ProcessResponse(resp); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func (s *Scraper) get(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.doRequest(req)
 }
