@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/andrew-d/goscrape"
 )
 
 // TextExtractor is a PieceExtractor that returns the combined text contents of
@@ -15,6 +16,8 @@ type TextExtractor struct{}
 func (e TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	return sel.Text(), nil
 }
+
+var _ scrape.PieceExtractor = TextExtractor{}
 
 // HtmlExtractor extracts and returns the HTML from inside each element of the
 // given selection, as a string.
@@ -50,6 +53,8 @@ func (e HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	return ret, nil
 }
 
+var _ scrape.PieceExtractor = HtmlExtractor{}
+
 // OuterHtmlExtractor extracts and returns the HTML of each element of the
 // given selection, as a string.
 //
@@ -79,6 +84,8 @@ func (e OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error)
 	}
 	return ret, nil
 }
+
+var _ scrape.PieceExtractor = OuterHtmlExtractor{}
 
 // RegexExtractor runs the given regex over the contents of each element in the
 // given selection, and, for each match, extracts the first subexpression.
@@ -162,6 +169,8 @@ func (e RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
+var _ scrape.PieceExtractor = RegexExtractor{}
+
 // AttrExtractor extracts the value of a given HTML attribute from each element
 // in the selection, and returns them as a list.
 // The return type of the extractor is a list of attribute valueus (i.e. []string).
@@ -204,3 +213,5 @@ func (e AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
+
+var _ scrape.PieceExtractor = AttrExtractor{}
