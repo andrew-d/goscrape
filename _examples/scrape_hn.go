@@ -8,6 +8,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/andrew-d/goscrape"
+	"github.com/andrew-d/goscrape/extract"
 )
 
 func main() {
@@ -17,10 +18,10 @@ func main() {
 		DividePage: scrape.DividePageBySelector("tr:nth-child(3) tr:nth-child(3n-2):not([style='height:10px'])"),
 
 		Pieces: []scrape.Piece{
-			{Name: "title", Selector: "td.title > a", Extractor: scrape.TextExtractor{}},
-			{Name: "link", Selector: "td.title > a", Extractor: scrape.AttrExtractor{Attr: "href"}},
+			{Name: "title", Selector: "td.title > a", Extractor: extract.Text{}},
+			{Name: "link", Selector: "td.title > a", Extractor: extract.Attr{Attr: "href"}},
 			{Name: "rank", Selector: "td.title[align='right']",
-				Extractor: scrape.RegexExtractor{Regex: regexp.MustCompile(`(\d+)`)}},
+				Extractor: extract.Regex{Regex: regexp.MustCompile(`(\d+)`)}},
 		},
 
 		// Extract the first 3 pages of results

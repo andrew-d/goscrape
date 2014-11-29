@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/andrew-d/goscrape"
+	"github.com/andrew-d/goscrape/extract"
 )
 
 func main() {
@@ -21,15 +22,15 @@ func main() {
 		DividePage: scrape.DividePageBySelector(".linklisting > div.thing"),
 
 		Pieces: []scrape.Piece{
-			{Name: "title", Selector: "p.title > a", Extractor: scrape.TextExtractor{}},
-			{Name: "link", Selector: "p.title > a", Extractor: scrape.AttrExtractor{Attr: "href"}},
-			{Name: "score", Selector: "div.score.unvoted", Extractor: scrape.TextExtractor{}},
-			{Name: "rank", Selector: "span.rank", Extractor: scrape.TextExtractor{}},
-			{Name: "author", Selector: "a.author", Extractor: scrape.TextExtractor{}},
-			{Name: "subreddit", Selector: "a.subreddit", Extractor: scrape.TextExtractor{}},
+			{Name: "title", Selector: "p.title > a", Extractor: extract.Text{}},
+			{Name: "link", Selector: "p.title > a", Extractor: extract.Attr{Attr: "href"}},
+			{Name: "score", Selector: "div.score.unvoted", Extractor: extract.Text{}},
+			{Name: "rank", Selector: "span.rank", Extractor: extract.Text{}},
+			{Name: "author", Selector: "a.author", Extractor: extract.Text{}},
+			{Name: "subreddit", Selector: "a.subreddit", Extractor: extract.Text{}},
 
 			// Note: if a self post is edited, then this will be an array with two elements.
-			{Name: "date", Selector: "time", Extractor: scrape.AttrExtractor{Attr: "datetime"}},
+			{Name: "date", Selector: "time", Extractor: extract.Attr{Attr: "datetime"}},
 		},
 	}
 

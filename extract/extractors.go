@@ -1,4 +1,4 @@
-package scrape
+package extract
 
 import (
 	"errors"
@@ -9,17 +9,17 @@ import (
 	"github.com/andrew-d/goscrape"
 )
 
-// TextExtractor is a PieceExtractor that returns the combined text contents of
+// Text is a PieceExtractor that returns the combined text contents of
 // the given selection.
-type TextExtractor struct{}
+type Text struct{}
 
-func (e TextExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	return sel.Text(), nil
 }
 
-var _ scrape.PieceExtractor = TextExtractor{}
+var _ scrape.PieceExtractor = Text{}
 
-// HtmlExtractor extracts and returns the HTML from inside each element of the
+// Html extracts and returns the HTML from inside each element of the
 // given selection, as a string.
 //
 // Note that this results in what is effectively the innerHTML of the element -
@@ -27,9 +27,9 @@ var _ scrape.PieceExtractor = TextExtractor{}
 // then the output will be: "<b>ONE</b><i>TWO</i>".
 //
 // The return type is a string of all the inner HTML joined together.
-type HtmlExtractor struct{}
+type Html struct{}
 
-func (e HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	var ret, h string
 	var err error
 
@@ -53,9 +53,9 @@ func (e HtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	return ret, nil
 }
 
-var _ scrape.PieceExtractor = HtmlExtractor{}
+var _ scrape.PieceExtractor = Html{}
 
-// OuterHtmlExtractor extracts and returns the HTML of each element of the
+// OuterHtml extracts and returns the HTML of each element of the
 // given selection, as a string.
 //
 // To illustrate, if our selection consists of
@@ -63,9 +63,9 @@ var _ scrape.PieceExtractor = HtmlExtractor{}
 // "<div><b>ONE</b></div><p><i>TWO</i></p>".
 //
 // The return type is a string of all the outer HTML joined together.
-type OuterHtmlExtractor struct{}
+type OuterHtml struct{}
 
-func (e OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 	var ret, h string
 	var err error
 
@@ -85,12 +85,12 @@ func (e OuterHtmlExtractor) Extract(sel *goquery.Selection) (interface{}, error)
 	return ret, nil
 }
 
-var _ scrape.PieceExtractor = OuterHtmlExtractor{}
+var _ scrape.PieceExtractor = OuterHtml{}
 
-// RegexExtractor runs the given regex over the contents of each element in the
+// Regex runs the given regex over the contents of each element in the
 // given selection, and, for each match, extracts the first subexpression.
 // The return type of the extractor is a list of string matches (i.e. []string).
-type RegexExtractor struct {
+type Regex struct {
 	// The regular expression to match.  This regular expression must define
 	// exactly one parenthesized subexpression (sometimes known as a "capturing
 	// group"), which will be extracted.
@@ -100,7 +100,7 @@ type RegexExtractor struct {
 	// each element in the selection, as opposed to the HTML contents.
 	OnlyText bool
 
-	// By default, if there is only a single match, RegexExtractor will return
+	// By default, if there is only a single match, Regex will return
 	// the match itself (as opposed to an array containing the single match).
 	// Set AlwaysReturnList to true to disable this behaviour, ensuring that the
 	// Extract function always returns an array.
@@ -113,7 +113,7 @@ type RegexExtractor struct {
 	OmitIfEmpty bool
 }
 
-func (e RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	if e.Regex == nil {
 		return nil, errors.New("no regex given")
 	}
@@ -169,12 +169,12 @@ func (e RegexExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-var _ scrape.PieceExtractor = RegexExtractor{}
+var _ scrape.PieceExtractor = Regex{}
 
-// AttrExtractor extracts the value of a given HTML attribute from each element
+// Attr extracts the value of a given HTML attribute from each element
 // in the selection, and returns them as a list.
 // The return type of the extractor is a list of attribute valueus (i.e. []string).
-type AttrExtractor struct {
+type Attr struct {
 	// The HTML attribute to extract from each element.
 	Attr string
 
@@ -191,7 +191,7 @@ type AttrExtractor struct {
 	OmitIfEmpty bool
 }
 
-func (e AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
+func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	if len(e.Attr) == 0 {
 		return nil, errors.New("no attribute provided")
 	}
@@ -214,4 +214,4 @@ func (e AttrExtractor) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-var _ scrape.PieceExtractor = AttrExtractor{}
+var _ scrape.PieceExtractor = Attr{}

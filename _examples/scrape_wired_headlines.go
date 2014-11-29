@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/andrew-d/goscrape"
+	"github.com/andrew-d/goscrape/extract"
 )
 
 func main() {
@@ -13,9 +14,9 @@ func main() {
 		DividePage: scrape.DividePageBySelector("#secondary_package .headline"),
 
 		Pieces: []scrape.Piece{
-			{Name: "type", Selector: "h5", Extractor: scrape.TextExtractor{}},
-			{Name: "title", Selector: "h2 > a", Extractor: scrape.TextExtractor{}},
-			{Name: "link", Selector: "h2 > a", Extractor: scrape.AttrExtractor{Attr: "href"}},
+			{Name: "type", Selector: "h5", Extractor: extract.Text{}},
+			{Name: "title", Selector: "h2 > a", Extractor: extract.Text{}},
+			{Name: "link", Selector: "h2 > a", Extractor: extract.Attr{Attr: "href"}},
 		},
 	}
 
