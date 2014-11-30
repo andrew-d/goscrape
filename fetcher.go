@@ -10,6 +10,9 @@ import (
 
 // Fetcher is the interface that must be satisfied by things that can fetch
 // remote URLs and return their contents.
+//
+// Note: Fetchers may or may not be safe to use concurrently.  Please read the
+// documentation for each fetcher for more details.
 type Fetcher interface {
 	// Prepare is called once at the beginning of the scrape.
 	Prepare() error

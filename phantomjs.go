@@ -96,6 +96,8 @@ func findPhantomJS() string {
 	return ""
 }
 
+// HasPhantomJS returns whether we can find a PhantomJS installation on this system.
+// If this returns "false", creating a PhantomJSFetcher will fail.
 func HasPhantomJS() bool {
 	return findPhantomJS() != ""
 }
