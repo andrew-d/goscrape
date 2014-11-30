@@ -33,6 +33,7 @@ import (
 	"os"
 
 	"github.com/andrew-d/goscrape"
+	"github.com/andrew-d/goscrape/extract"
 )
 
 func main() {
@@ -40,9 +41,9 @@ func main() {
 		DividePage: scrape.DividePageBySelector("#secondary_package .headline"),
 
 		Pieces: []scrape.Piece{
-			{Name: "type", Selector: "h5", Extractor: scrape.TextExtractor{}},
-			{Name: "title", Selector: "h2 > a", Extractor: scrape.TextExtractor{}},
-			{Name: "link", Selector: "h2 > a", Extractor: scrape.AttrExtractor{Attr: "href"}},
+			{Name: "type", Selector: "h5", Extractor: extract.Text{}},
+			{Name: "title", Selector: "h2 > a", Extractor: extract.Text{}},
+			{Name: "link", Selector: "h2 > a", Extractor: extract.Attr{Attr: "href"}},
 		},
 	}
 
@@ -63,7 +64,7 @@ func main() {
 ```
 
 As you can see, the entire example, including proper error handling, only takes
-35 lines of code - short and sweet.
+36 lines of code - short and sweet.
 
 For more usage examples, see the
 [examples directory](https://github.com/andrew-d/goscrape/tree/master/_examples).
@@ -73,7 +74,6 @@ For more usage examples, see the
 Here's the rough roadmap of things that I'd like to add.  If you have a feature
 request, please let me know by [opening an issue](https://github.com/andrew-d/goscrape/issues/new)!
 
-- [ ] Add support for using PhantomJS to grab a website's content
 - [ ] Allow deduplication of Pieces (a custom callback?)
 - [ ] Improve parallelization (scrape multiple pages at a time, but maintain order)
 
