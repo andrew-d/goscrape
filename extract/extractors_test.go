@@ -139,3 +139,27 @@ func TestAttr(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
 }
+
+func TestCount(t *testing.T) {
+	sel := selFrom(`
+	<div>One</div>
+	<div class="foo">Two</div>
+	<div>Three</div>
+	`)
+
+	ret, err := Count{}.Extract(sel.Find("div"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, 3)
+
+	ret, err = Count{}.Extract(sel.Find(".foo"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, 1)
+
+	ret, err = Count{}.Extract(sel.Find(".bad"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, 0)
+
+	ret, err = Count{OmitIfEmpty: true}.Extract(sel.Find(".bad"))
+	assert.NoError(t, err)
+	assert.Nil(t, ret)
+}

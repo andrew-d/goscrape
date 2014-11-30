@@ -215,3 +215,21 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 var _ scrape.PieceExtractor = Attr{}
+
+// Count extracts the count of elements that are matched and returns it.
+type Count struct {
+	// If no elements with this attribute are found, then return 'nil' from
+	// Extract, instead of a number.  This signals that the result of this
+	// Piece should be omitted entirely from the results, as opposed to including
+	// the empty list.
+	OmitIfEmpty bool
+}
+
+func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
+	l := sel.Length()
+	if l == 0 && e.OmitIfEmpty {
+		return nil, nil
+	}
+
+	return l, nil
+}
