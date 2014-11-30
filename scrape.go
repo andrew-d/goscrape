@@ -19,7 +19,8 @@ type NextPageFunc func(*goquery.Selection) string
 // For more information, please see the documentation on the ScrapeConfig type.
 type DividePageFunc func(*goquery.Selection) []*goquery.Selection
 
-// This interface represents something that can extract data from a selection.
+// The PieceExtractor interface represents something that can extract data from
+// a selection.
 type PieceExtractor interface {
 	// Extract some data from the given Selection and return it.  The returned
 	// data should be encodable - i.e. passing it to json.Marshal should succeed.
@@ -28,6 +29,18 @@ type PieceExtractor interface {
 	//
 	// If this function returns an error, then the scrape is aborted.
 	Extract(*goquery.Selection) (interface{}, error)
+}
+
+// The Paginator interface should be implemented by things that can retrieve the
+// next page from the current one.
+type Paginator interface {
+	// NextPage controls the progress of the scrape.  It is called for each input
+	// page, starting with the origin URL, and is expected to return the URL of
+	// the next page to process.  Note that order matters - calling 'NextPage' on
+	// page 1 should return page 2, not page 3.  The function should return an
+	// empty string when there are no more pages to process.
+	NextPage(url string, document *goquery.Selection) (string, error)
+	// TODO(andrew-d): should this return a string, a url.URL, ???
 }
 
 // A Piece represents a given chunk of data that is to be extracted from every
@@ -53,16 +66,11 @@ type ScrapeConfig struct {
 	// will be created and used.
 	Fetcher Fetcher
 
-	// NextPage controls the progress of the scrape.  It is called for each input
-	// page, starting with the origin URL, and is expected to return the URL of
-	// the next page to process.  Note that order matters - calling 'NextPage' on
-	// page 1 should return page 2, not page 3.  The function should return an
-	// empty string when there are no more pages to process.
+	// Paginator is the Paginator to use for this current scrape.
 	//
-	// If NextPage is nil, then no pagination is performed and it is assumed that
+	// If Paginator is nil, then no pagination is performed and it is assumed that
 	// the initial URL is the only page.
-	NextPage NextPageFunc
-	// TODO(andrew-d): should this return a string, a url.URL, ???
+	Paginator Paginator
 
 	// DividePage splits a page into individual 'blocks'.  When scraping, we treat
 	// each page as if it contains some number of 'blocks', each of which can be
@@ -88,7 +96,7 @@ type ScrapeConfig struct {
 func (c *ScrapeConfig) clone() *ScrapeConfig {
 	ret := &ScrapeConfig{
 		Fetcher:    c.Fetcher,
-		NextPage:   c.NextPage,
+		Paginator:  c.Paginator,
 		DividePage: c.DividePage,
 		Pieces:     c.Pieces,
 	}
@@ -166,10 +174,8 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 
 	// Clone the configuration and fill in the defaults.
 	config := c.clone()
-	if config.NextPage == nil {
-		config.NextPage = func(*goquery.Selection) string {
-			return ""
-		}
+	if config.Paginator == nil {
+		config.Paginator = dummyPaginator{}
 	}
 	if config.DividePage == nil {
 		config.DividePage = DividePageBySelector("body")
@@ -262,7 +268,10 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 		res.Results = append(res.Results, results)
 
 		// Get the next page.
-		url = s.config.NextPage(doc.Selection)
+		url, err = s.config.Paginator.NextPage(url, doc.Selection)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// All good!

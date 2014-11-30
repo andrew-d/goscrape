@@ -6,14 +6,12 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/andrew-d/goscrape"
 	"github.com/andrew-d/goscrape/extract"
+	"github.com/andrew-d/goscrape/paginate"
 )
 
 func main() {
-	numPages := 0
-
 	config := &scrape.ScrapeConfig{
 		DividePage: scrape.DividePageBySelector("tr:nth-child(3) tr:nth-child(3n-2):not([style='height:10px'])"),
 
@@ -24,17 +22,9 @@ func main() {
 				Extractor: extract.Regex{Regex: regexp.MustCompile(`(\d+)`)}},
 		},
 
-		// Extract the first 3 pages of results
-		NextPage: func(doc *goquery.Selection) string {
-			val, found := doc.Find("a[rel='nofollow']:last-child").Attr("href")
-
-			numPages++
-			if !found || numPages >= 3 {
-				return ""
-			}
-
-			return "https://news.ycombinator.com/" + val
-		},
+		// Retrieve the first page, and then 2 additional pages.
+		Paginator: paginate.LimitPages(2,
+			paginate.BySelector("a[rel='nofollow']:last-child", "href")),
 	}
 
 	scraper, err := scrape.New(config)

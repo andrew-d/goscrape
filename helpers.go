@@ -4,17 +4,11 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// NextPageBySelector returns a function that extracts the next page from a
-// document by querying a given CSS selector and extracting the given HTML
-// attribute from the resulting element.
-func NextPageBySelector(sel, attr string) NextPageFunc {
-	ret := func(doc *goquery.Selection) string {
-		if val, found := doc.Find(sel).Attr(attr); found {
-			return val
-		}
-		return ""
-	}
-	return ret
+type dummyPaginator struct {
+}
+
+func (p dummyPaginator) NextPage(uri string, doc *goquery.Selection) (string, error) {
+	return "", nil
 }
 
 // DividePageBySelector returns a function that divides a page into blocks by
