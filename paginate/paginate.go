@@ -8,6 +8,22 @@ import (
 	"github.com/andrew-d/goscrape"
 )
 
+// RelUrl is a helper function that aids in calculating the absolute URL from a
+// base URL and relative URL.
+func RelUrl(base, rel string) (string, error) {
+	baseUrl, err := url.Parse(base)
+	if err != nil {
+		return "", err
+	}
+	relUrl, err := url.Parse(rel)
+	if err != nil {
+		return "", err
+	}
+
+	newUrl := baseUrl.ResolveReference(relUrl)
+	return newUrl.String(), nil
+}
+
 type bySelectorPaginator struct {
 	sel  string
 	attr string
@@ -28,18 +44,7 @@ func (p *bySelectorPaginator) NextPage(uri string, doc *goquery.Selection) (stri
 		return "", nil
 	}
 
-	// Make the URL absolute.
-	base, err := url.Parse(uri)
-	if err != nil {
-		return "", err
-	}
-	attrUrl, err := url.Parse(val)
-	if err != nil {
-		return "", err
-	}
-
-	newUrl := base.ResolveReference(attrUrl)
-	return newUrl.String(), nil
+	return RelUrl(uri, val)
 }
 
 type byQueryParamPaginator struct {
