@@ -122,7 +122,7 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 			e.Regex.NumSubexp())
 	}
 
-	var results []string
+	results := []string{}
 
 	// For each element in the selector...
 	var err error
@@ -196,7 +196,7 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 		return nil, errors.New("no attribute provided")
 	}
 
-	var results []string
+	results := []string{}
 
 	sel.Each(func(i int, s *goquery.Selection) {
 		if val, found := s.Attr(e.Attr); found {

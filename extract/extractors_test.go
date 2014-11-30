@@ -1,0 +1,141 @@
+package extract
+
+import (
+	"regexp"
+	"strings"
+	"testing"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/stretchr/testify/assert"
+)
+
+func selFrom(s string) *goquery.Selection {
+	r := strings.NewReader(s)
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		panic(err)
+	}
+
+	return doc.Selection
+}
+
+func TestText(t *testing.T) {
+	sel := selFrom(`<p>Test 123</p>`)
+	ret, err := Text{}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, "Test 123")
+
+	sel = selFrom(`<p>First</p><p>Second</p>`)
+	ret, err = Text{}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, "FirstSecond")
+}
+
+func TestHtml(t *testing.T) {
+	sel := selFrom(
+		`<div class="one">` +
+			`<div class="two">Bar</div>` +
+			`<div class="two"><i>Baz</i></div>` +
+			`<div class="three">Asdf</div>` +
+			`</div>`)
+	ret, err := Html{}.Extract(sel.Find(".one"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, `<div class="two">Bar</div><div class="two"><i>Baz</i></div><div class="three">Asdf</div>`)
+
+	ret, err = Html{}.Extract(sel.Find(".two"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, `Bar<i>Baz</i>`)
+}
+
+func TestOuterHtml(t *testing.T) {
+	sel := selFrom(`<div><p>Test 123</p></div>`)
+	ret, err := OuterHtml{}.Extract(sel.Find("p"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, `<p>Test 123</p>`)
+}
+
+func TestRegexInvalid(t *testing.T) {
+	var err error
+
+	_, err = Regex{}.Extract(selFrom(`foo`))
+	assert.Error(t, err, "no regex given")
+
+	_, err = Regex{Regex: regexp.MustCompile(`foo`)}.Extract(selFrom(`bar`))
+	assert.Error(t, err, "regex has an invalid number of subexpressions (0 != 1")
+
+	_, err = Regex{Regex: regexp.MustCompile(`(a)(b)`)}.Extract(selFrom(`bar`))
+	assert.Error(t, err, "regex has an invalid number of subexpressions (2 != 1")
+}
+
+func TestRegex(t *testing.T) {
+	sel := selFrom(`<div class="one">foo</div><div class="fooobar">bar</div>`)
+	ret, err := Regex{Regex: regexp.MustCompile("f(o+)o")}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{"o", "oo"})
+
+	ret, err = Regex{
+		Regex:    regexp.MustCompile("f(o+)o"),
+		OnlyText: true,
+	}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, "o")
+
+	ret, err = Regex{
+		Regex:            regexp.MustCompile("f(o+)o"),
+		OnlyText:         true,
+		AlwaysReturnList: true,
+	}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{"o"})
+
+	ret, err = Regex{
+		Regex:       regexp.MustCompile("a(sd)f"),
+		OmitIfEmpty: true,
+	}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Nil(t, ret)
+}
+
+func TestAttrInvalid(t *testing.T) {
+	var err error
+
+	_, err = Attr{}.Extract(selFrom(`foo`))
+	assert.Error(t, err, "no attribute provided")
+}
+
+func TestAttr(t *testing.T) {
+	sel := selFrom(`
+	<a href="http://www.google.com">google</a>
+	<a href="http://www.yahoo.com">yahoo</a>
+	<a href="http://www.microsoft.com" class="notsearch">microsoft</a>
+	`)
+	ret, err := Attr{Attr: "href"}.Extract(sel.Find("a"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{
+		"http://www.google.com",
+		"http://www.yahoo.com",
+		"http://www.microsoft.com",
+	})
+
+	ret, err = Attr{Attr: "href"}.Extract(sel.Find(".notsearch"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, "http://www.microsoft.com")
+
+	ret, err = Attr{Attr: "href", AlwaysReturnList: true}.Extract(sel.Find(".notsearch"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{"http://www.microsoft.com"})
+
+	ret, err = Attr{
+		Attr:             "href",
+		AlwaysReturnList: true,
+	}.Extract(sel.Find(".abc"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{})
+
+	ret, err = Attr{
+		Attr:        "href",
+		OmitIfEmpty: true,
+	}.Extract(sel.Find(".abc"))
+	assert.NoError(t, err)
+	assert.Nil(t, ret)
+}
