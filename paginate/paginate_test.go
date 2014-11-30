@@ -29,6 +29,18 @@ func TestBySelector(t *testing.T) {
 	pg, err = BySelector("div", "xxx").NextPage("", sel)
 	assert.NoError(t, err)
 	assert.Equal(t, pg, "")
+
+	sel = selFrom(`<a href="/foobar">foo</a>`)
+
+	pg, err = BySelector("a", "href").NextPage("http://www.google.com", sel)
+	assert.NoError(t, err)
+	assert.Equal(t, pg, "http://www.google.com/foobar")
+
+	sel = selFrom(`<a href="asdf?q=123">foo</a>`)
+
+	pg, err = BySelector("a", "href").NextPage("http://www.google.com", sel)
+	assert.NoError(t, err)
+	assert.Equal(t, pg, "http://www.google.com/asdf?q=123")
 }
 
 func TestByQueryParam(t *testing.T) {

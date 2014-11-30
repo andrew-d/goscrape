@@ -22,11 +22,24 @@ func BySelector(sel, attr string) scrape.Paginator {
 	}
 }
 
-func (p *bySelectorPaginator) NextPage(url string, doc *goquery.Selection) (string, error) {
-	if val, found := doc.Find(p.sel).Attr(p.attr); found {
-		return val, nil
+func (p *bySelectorPaginator) NextPage(uri string, doc *goquery.Selection) (string, error) {
+	val, found := doc.Find(p.sel).Attr(p.attr)
+	if !found {
+		return "", nil
 	}
-	return "", nil
+
+	// Make the URL absolute.
+	base, err := url.Parse(uri)
+	if err != nil {
+		return "", err
+	}
+	attrUrl, err := url.Parse(val)
+	if err != nil {
+		return "", err
+	}
+
+	newUrl := base.ResolveReference(attrUrl)
+	return newUrl.String(), nil
 }
 
 type byQueryParamPaginator struct {
