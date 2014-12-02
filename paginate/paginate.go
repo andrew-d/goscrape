@@ -51,10 +51,10 @@ type byQueryParamPaginator struct {
 	param string
 }
 
-// ByQueryParam returns a Paginator that returns the next page from a document by
-// incrementing a given query parameter.  Note that this will paginate
-// infinitely - you probably want to use the LimitPages wrapper to determine how
-// many pages to paginate
+// ByQueryParam returns a Paginator that returns the next page from a document
+// by incrementing a given query parameter.  Note that this will paginate
+// infinitely - you probably want to specify a maximum number of pages to
+// scrape by using the ScrapeWithOpts method.
 func ByQueryParam(param string) scrape.Paginator {
 	return &byQueryParamPaginator{param}
 }
