@@ -91,35 +91,3 @@ func (p *byQueryParamPaginator) NextPage(u string, _ *goquery.Selection) (string
 	uri.RawQuery = query
 	return uri.String(), nil
 }
-
-type limitPagesPaginator struct {
-	current    int
-	limit      int
-	underlying scrape.Paginator
-}
-
-// LimitPages is a wrapper that takes an existing Paginator and limits the number of
-// pages that it returns.  This is useful when paginating infinite-scroll sites
-// and the like.
-//
-// Note: the first page of a scrape is always retrieved and paginated, so this
-// limit is actually limiting the number of *additional* pages that are paginated.
-// For example, if `limit` is 1, then the initial URL provided, plus one additional
-// page will be used.  Use a `limit` of 0 to prevent any pagination from occuring.
-func LimitPages(limit int, underlying scrape.Paginator) scrape.Paginator {
-	return &limitPagesPaginator{
-		current:    0,
-		limit:      limit,
-		underlying: underlying,
-	}
-}
-
-func (p *limitPagesPaginator) NextPage(url string, sel *goquery.Selection) (string, error) {
-	// If we've already paginated this number of pages, then we stop.
-	if p.current >= p.limit {
-		return "", nil
-	}
-
-	p.current += 1
-	return p.underlying.NextPage(url, sel)
-}

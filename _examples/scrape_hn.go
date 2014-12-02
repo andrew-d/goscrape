@@ -22,9 +22,7 @@ func main() {
 				Extractor: extract.Regex{Regex: regexp.MustCompile(`(\d+)`)}},
 		},
 
-		// Retrieve the first page, and then 2 additional pages.
-		Paginator: paginate.LimitPages(2,
-			paginate.BySelector("a[rel='nofollow']:last-child", "href")),
+		Paginator: paginate.BySelector("a[rel='nofollow']:last-child", "href"),
 	}
 
 	scraper, err := scrape.New(config)
@@ -33,7 +31,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	results, err := scraper.Scrape("https://news.ycombinator.com")
+	results, err := scraper.ScrapeWithOpts(
+		"https://news.ycombinator.com",
+		scrape.ScrapeOptions{MaxPages: 3},
+	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error scraping: %s\n", err)
 		os.Exit(1)

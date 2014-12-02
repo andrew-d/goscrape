@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/andrew-d/goscrape"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,39 +54,4 @@ func TestByQueryParam(t *testing.T) {
 	pg, err = ByQueryParam("bad").NextPage("http://www.google.com?bad=asdf", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, pg, "")
-}
-
-func TestLimitPages(t *testing.T) {
-	collect := func(url string, p scrape.Paginator) []string {
-		results := []string{}
-		for {
-			n, err := p.NextPage(url, nil)
-			assert.NoError(t, err)
-
-			if n == "" {
-				return results
-			}
-
-			results = append(results, n)
-			url = n
-		}
-	}
-
-	tests := []struct {
-		Start   string
-		Limit   int
-		Results []string
-	}{
-		{"http://www.google.com?foo=1", 0, []string{}},
-		{"http://www.google.com?foo=1", 1, []string{"http://www.google.com?foo=2"}},
-		{"http://www.google.com?foo=1", 2, []string{
-			"http://www.google.com?foo=2",
-			"http://www.google.com?foo=3",
-		}},
-	}
-
-	for _, curr := range tests {
-		check := collect(curr.Start, LimitPages(curr.Limit, ByQueryParam("foo")))
-		assert.Equal(t, check, curr.Results)
-	}
 }
