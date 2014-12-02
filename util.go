@@ -5,16 +5,20 @@ import (
 	"strings"
 )
 
-type StringReadCloser struct {
-	*strings.Reader
+func newStringReadCloser(s string) dummyReadCloser {
+	return dummyReadCloser{strings.NewReader(s)}
 }
 
-func NewStringReadCloser(s string) *StringReadCloser {
-	return &StringReadCloser{strings.NewReader(s)}
+type dummyReadCloser struct {
+	r io.Reader
 }
 
-func (s *StringReadCloser) Close() error {
+func (c dummyReadCloser) Read(b []byte) (int, error) {
+	return c.r.Read(b)
+}
+
+func (s dummyReadCloser) Close() error {
 	return nil
 }
 
-var _ io.ReadCloser = &StringReadCloser{}
+var _ io.ReadCloser = &dummyReadCloser{}

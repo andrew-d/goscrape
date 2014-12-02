@@ -198,7 +198,7 @@ func (pf *PhantomJSFetcher) Fetch(method, url string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("unknown type for 'contents': %T", results["contents"])
 	}
 
-	return NewStringReadCloser(contents), nil
+	return newStringReadCloser(contents), nil
 }
 
 func (pf *PhantomJSFetcher) Close() {
