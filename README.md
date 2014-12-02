@@ -1,6 +1,6 @@
 # goscrape
 
-[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/andrew-d/goscrape)
+[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/andrew-d/goscrape) [![Build Status](https://travis-ci.org/andrew-d/goscrape.svg?branch=master)](https://travis-ci.org/andrew-d/goscrape)
 
 goscrape is a extensible structured scraper for Go.  What does a "structured
 scraper" mean?  In this case, it means that you define what you want to extract
