@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"code.google.com/p/go.net/html"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/andrew-d/goscrape"
+	"golang.org/x/net/html"
 )
 
 // Const is a PieceExtractor that returns a constant value.
