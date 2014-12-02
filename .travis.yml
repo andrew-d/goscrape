@@ -10,3 +10,4 @@ install:
     - go get -u github.com/PuerkitoBio/goquery
     - go get -u github.com/stretchr/testify/assert
     - go get -u code.google.com/p/go.net/publicsuffix
+    - go get -u code.google.com/p/go.net/html

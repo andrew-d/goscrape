@@ -48,8 +48,15 @@ func TestHtml(t *testing.T) {
 }
 
 func TestOuterHtml(t *testing.T) {
+	// Simple version
 	sel := selFrom(`<div><p>Test 123</p></div>`)
 	ret, err := OuterHtml{}.Extract(sel.Find("p"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, `<p>Test 123</p>`)
+
+	// Should only get the outer HTML of the element, not siblings
+	sel = selFrom(`<div><p>Test 123</p><b>foo</b></div>`)
+	ret, err = OuterHtml{}.Extract(sel.Find("p"))
 	assert.NoError(t, err)
 	assert.Equal(t, ret, `<p>Test 123</p>`)
 }

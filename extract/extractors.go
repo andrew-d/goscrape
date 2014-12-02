@@ -1,10 +1,12 @@
 package extract
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"regexp"
 
+	"code.google.com/p/go.net/html"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/andrew-d/goscrape"
 )
@@ -46,17 +48,13 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	var err error
 
 	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
-		s.EachWithBreak(func(i int, s *goquery.Selection) bool {
-			h, err = s.Html()
-			if err != nil {
-				return false
-			}
+		h, err = s.Html()
+		if err != nil {
+			return false
+		}
 
-			ret += h
-			return true
-		})
-
-		return err == nil
+		ret += h
+		return true
 	})
 
 	if err != nil {
@@ -78,23 +76,14 @@ var _ scrape.PieceExtractor = Html{}
 type OuterHtml struct{}
 
 func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
-	var ret, h string
-	var err error
-
-	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
-		h, err = s.Html()
-		if err != nil {
-			return false
+	output := bytes.NewBufferString("")
+	for _, node := range sel.Nodes {
+		if err := html.Render(output, node); err != nil {
+			return nil, err
 		}
-
-		ret += h
-		return true
-	})
-
-	if err != nil {
-		return nil, err
 	}
-	return ret, nil
+
+	return output.String(), nil
 }
 
 var _ scrape.PieceExtractor = OuterHtml{}
