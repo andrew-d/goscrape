@@ -9,6 +9,18 @@ import (
 	"github.com/andrew-d/goscrape"
 )
 
+// Const is a PieceExtractor that returns a constant value.
+type Const struct {
+	// The value to return when the Extract() function is called.
+	Val interface{}
+}
+
+func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
+	return e.Val, nil
+}
+
+var _ scrape.PieceExtractor = Const{}
+
 // Text is a PieceExtractor that returns the combined text contents of
 // the given selection.
 type Text struct{}
