@@ -11,10 +11,6 @@ var (
 	ErrNoPieces = errors.New("no pieces in the config")
 )
 
-// The NextPageFunc type is used to extract the next page during a scrape.  For
-// more information, please see the documentation on the ScrapeConfig type.
-type NextPageFunc func(*goquery.Selection) string
-
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
 // For more information, please see the documentation on the ScrapeConfig type.
 type DividePageFunc func(*goquery.Selection) []*goquery.Selection
