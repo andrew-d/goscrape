@@ -89,13 +89,17 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 var _ scrape.PieceExtractor = OuterHtml{}
 
 // Regex runs the given regex over the contents of each element in the
-// given selection, and, for each match, extracts the first subexpression.
+// given selection, and, for each match, extracts the given subexpression.
 // The return type of the extractor is a list of string matches (i.e. []string).
 type Regex struct {
 	// The regular expression to match.  This regular expression must define
 	// exactly one parenthesized subexpression (sometimes known as a "capturing
 	// group"), which will be extracted.
 	Regex *regexp.Regexp
+
+	// The subexpression of the regex to match.  If this value is not set, and if
+	// the given regex has more than one subexpression, an error will be thrown.
+	Subexpression int
 
 	// When OnlyText is true, only run the given regex over the text contents of
 	// each element in the selection, as opposed to the HTML contents.
@@ -118,9 +122,23 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	if e.Regex == nil {
 		return nil, errors.New("no regex given")
 	}
-	if e.Regex.NumSubexp() != 1 {
-		return nil, fmt.Errorf("regex has an invalid number of subexpressions (%d != 1)",
-			e.Regex.NumSubexp())
+	if e.Regex.NumSubexp() == 0 {
+		return nil, errors.New("regex has no subexpressions")
+	}
+
+	var subexp int
+	if e.Subexpression == 0 {
+		if e.Regex.NumSubexp() != 1 {
+			e := fmt.Errorf(
+				"regex has more than one subexpression (%d), but which to "+
+					"extract was not specified",
+				e.Regex.NumSubexp())
+			return nil, e
+		}
+
+		subexp = 1
+	} else {
+		subexp = e.Subexpression
 	}
 
 	results := []string{}
@@ -147,10 +165,11 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 
 		// For each regex match...
 		for _, submatches := range ret {
-			// The 0th entry will be the match of the entire string.  The 1st entry will
-			// be the first capturing group, which is what we want to extract.
+			// The 0th entry will be the match of the entire string.  The 1st
+			// entry will be the first capturing group, which is what we want to
+			// extract.
 			if len(submatches) > 1 {
-				results = append(results, submatches[1])
+				results = append(results, submatches[subexp])
 			}
 		}
 

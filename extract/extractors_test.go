@@ -68,10 +68,10 @@ func TestRegexInvalid(t *testing.T) {
 	assert.Error(t, err, "no regex given")
 
 	_, err = Regex{Regex: regexp.MustCompile(`foo`)}.Extract(selFrom(`bar`))
-	assert.Error(t, err, "regex has an invalid number of subexpressions (0 != 1")
+	assert.Error(t, err, "regex has no subexpressions")
 
 	_, err = Regex{Regex: regexp.MustCompile(`(a)(b)`)}.Extract(selFrom(`bar`))
-	assert.Error(t, err, "regex has an invalid number of subexpressions (2 != 1")
+	assert.Error(t, err, "regex has more than one subexpression (2), but which to extract was not specified")
 }
 
 func TestRegex(t *testing.T) {
@@ -79,6 +79,13 @@ func TestRegex(t *testing.T) {
 	ret, err := Regex{Regex: regexp.MustCompile("f(o+)o")}.Extract(sel)
 	assert.NoError(t, err)
 	assert.Equal(t, ret, []string{"o", "oo"})
+
+	ret, err = Regex{
+		Regex:         regexp.MustCompile("f(o)?(oo)bar"),
+		Subexpression: 2,
+	}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, "oo")
 
 	ret, err = Regex{
 		Regex:    regexp.MustCompile("f(o+)o"),
