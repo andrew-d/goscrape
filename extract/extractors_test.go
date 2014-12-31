@@ -31,6 +31,18 @@ func TestText(t *testing.T) {
 	assert.Equal(t, ret, "FirstSecond")
 }
 
+func TestMultipleText(t *testing.T) {
+	sel := selFrom(`<p>Test 123</p>`)
+	ret, err := MultipleText{}.Extract(sel.Find("p"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{"Test 123"})
+
+	sel = selFrom(`<p>First</p><p>Second</p>`)
+	ret, err = MultipleText{}.Extract(sel.Find("p"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{"First", "Second"})
+}
+
 func TestHtml(t *testing.T) {
 	sel := selFrom(
 		`<div class="one">` +

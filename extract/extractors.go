@@ -33,6 +33,30 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 
 var _ scrape.PieceExtractor = Text{}
 
+// MultipleText is a PieceExtractor that extracts the text from each element
+// in the given selection and returns the texts as an array.
+type MultipleText struct {
+	// If there are no items in the selection, then return 'nil' from Extract,
+	// instead of the empty list.  This signals that the result of this Piece
+	// should be omitted entirely from the results, as opposed to including the
+	// empty list.
+	OmitIfEmpty bool
+}
+
+func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
+	results := []string{}
+
+	sel.Each(func(i int, s *goquery.Selection) {
+		results = append(results, s.Text())
+	})
+
+	if len(results) == 0 && e.OmitIfEmpty {
+		return nil, nil
+	}
+
+	return results, nil
+}
+
 // Html extracts and returns the HTML from inside each element of the
 // given selection, as a string.
 //
