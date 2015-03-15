@@ -11,12 +11,12 @@ import (
 
 func main() {
 	config := &scrape.ScrapeConfig{
-		DividePage: scrape.DividePageBySelector("#secondary_package .headline"),
+		DividePage: scrape.DividePageBySelector("#latest-news li"),
 
 		Pieces: []scrape.Piece{
-			{Name: "type", Selector: "h5", Extractor: extract.Text{}},
-			{Name: "title", Selector: "h2 > a", Extractor: extract.Text{}},
-			{Name: "link", Selector: "h2 > a", Extractor: extract.Attr{Attr: "href"}},
+			{Name: "title", Selector: "h5.exchange-sm", Extractor: extract.Text{}},
+			{Name: "byline", Selector: "span.byline", Extractor: extract.Text{}},
+			{Name: "link", Selector: "a", Extractor: extract.Attr{Attr: "href"}},
 		},
 	}
 
