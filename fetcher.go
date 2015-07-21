@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	"code.google.com/p/go.net/publicsuffix"
+	"golang.org/x/net/publicsuffix"
 )
 
 // Fetcher is the interface that must be satisfied by things that can fetch
