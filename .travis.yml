@@ -45,4 +45,4 @@ matrix:
       env: COVER_FLAG=-cover
 
 script:
-  - go test -v ./... $COVER_FLAG
+  - go test -v $COVER_FLAG ./...
