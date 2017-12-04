@@ -159,7 +159,7 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 			return nil, fmt.Errorf("no name provided for piece %d", i)
 		}
 		if _, seen := seenNames[piece.Name]; seen {
-			return nil, fmt.Errorf("piece %s has a duplicate name", i)
+			return nil, fmt.Errorf("piece %d has a duplicate name", i)
 		}
 		seenNames[piece.Name] = struct{}{}
 
